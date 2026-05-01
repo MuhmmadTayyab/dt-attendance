@@ -1,0 +1,16 @@
+.git
+.expo
+.vscode
+.eas-inspect-archive
+.eas-build-local
+node_modules
+dist
+web-build
+android
+ios
+*.log
+eas-failed-log-*.txt
+expo-server*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*

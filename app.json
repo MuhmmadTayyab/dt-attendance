@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "DT Attendance",
+    "slug": "dt-attendance",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2B1B16"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.dtattendance.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#4E342E"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.dtattendance.mobile"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "fb74fc40-80aa-4760-a74f-ef830276331b"
+      }
+    }
+  }
+}
