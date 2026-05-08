@@ -23,7 +23,7 @@ export default function CurrentAttendanceScreen({ navigation }) {
     setError('');
 
     try {
-      const data = await getAttendance(user.employeeId);
+      const data = await getAttendance(user.employeeId, user.idCard);
       setRecords(data);
     } catch {
       setError('حاضری کا ریکارڈ لوڈ نہیں ہو سکا۔ انٹرنیٹ کنکشن چیک کریں۔');
@@ -31,7 +31,7 @@ export default function CurrentAttendanceScreen({ navigation }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [user.employeeId]);
+  }, [user.employeeId, user.idCard]);
 
   useFocusEffect(
     useCallback(() => {

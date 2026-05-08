@@ -42,7 +42,7 @@ export default function FilteredAttendanceScreen({ navigation }) {
     setSearched(true);
 
     try {
-      const data = await getAttendance(user.employeeId, { month, year });
+      const data = await getAttendance(user.employeeId, user.idCard, { month, year });
       setRecords(data);
     } catch {
       setError('فلٹر کے ساتھ ریکارڈ لوڈ نہیں ہو سکا۔ دوبارہ کوشش کریں۔');

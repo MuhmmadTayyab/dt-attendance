@@ -7,8 +7,27 @@ const client = axios.create({
 
 const negativeWords = ['invalid', 'wrong', 'error', 'fail', 'not found', 'false', 'نامکمل', 'غلط'];
 
+export function getPreviousMonthParams(date = new Date()) {
+  const previous = new Date(date.getFullYear(), date.getMonth() - 1, 1);
+  return {
+    month: previous.getMonth() + 1,
+    year: previous.getFullYear(),
+  };
+}
+
 function cleanString(value) {
   return String(value ?? '').trim();
+}
+
+function translateApiMessage(message) {
+  const text = cleanString(message).toLowerCase();
+  if (!text) return 'حاضری کا ریکارڈ حاصل نہیں ہو سکا۔';
+  if (text.includes('missing') || text.includes('invalid staff id')) return 'ملازم نمبر درست نہیں ہے۔';
+  if (text.includes('invalid month')) return 'مہینہ درست نہیں ہے۔';
+  if (text.includes('invalid year')) return 'سال درست نہیں ہے۔';
+  if (text.includes('network')) return 'نیٹ ورک مسئلہ ہے۔ براہ کرم دوبارہ کوشش کریں۔';
+  if (text.includes('invalid credentials')) return 'شناختی معلومات درست نہیں ہیں۔';
+  return message;
 }
 
 function valueMeansSuccess(value) {
@@ -61,6 +80,8 @@ export async function loginStaff(employeeId, idCard) {
     },
   });
 
+  console.log('LOGIN API RESPONSE:', data);
+
   if (!isLoginSuccessful(data)) {
     throw new Error('شناختی معلومات درست نہیں ہیں۔ دوبارہ کوشش کریں۔');
   }
@@ -77,44 +98,177 @@ function pickValue(item, keys) {
   return '';
 }
 
-function statusToUrdu(status) {
-  const value = cleanString(status).toLowerCase();
-  if (!value) return 'نامعلوم';
-  if (['present', 'p', '1', 'حاضر'].includes(value) || value.includes('present')) return 'حاضر';
-  if (['absent', 'a', '0', 'غیر حاضر'].includes(value) || value.includes('absent')) return 'غیر حاضر';
-  if (['leave', 'l', 'رخصت'].includes(value) || value.includes('leave')) return 'رخصت';
-  return cleanString(status);
+function getByPath(source, path) {
+  return path.reduce((current, key) => current?.[key], source);
+}
+
+function looksLikeAttendanceRow(item) {
+  if (!item || typeof item !== 'object') return false;
+  return Boolean(
+    item.date ||
+      item.attendance_date ||
+      item.sign_in ||
+      item.sign_out ||
+      item.time_in ||
+      item.time_out ||
+      item.status ||
+      item.attendance_status,
+  );
+}
+
+function findAttendanceArrayDeep(source, seen = new Set()) {
+  if (!source || typeof source !== 'object' || seen.has(source)) return null;
+  seen.add(source);
+
+  if (Array.isArray(source)) {
+    return source.some(looksLikeAttendanceRow) ? source : null;
+  }
+
+  for (const value of Object.values(source)) {
+    const found = findAttendanceArrayDeep(value, seen);
+    if (found) return found;
+  }
+
+  return null;
 }
 
 function unwrapAttendance(payload) {
   if (Array.isArray(payload)) return payload;
-  if (!payload || typeof payload !== 'object') return [];
-
-  const possibleKeys = ['data', 'attendance', 'records', 'record', 'result', 'rows'];
-  for (const key of possibleKeys) {
-    if (Array.isArray(payload[key])) return payload[key];
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('حاضری کا جواب درست فارمیٹ میں نہیں ہے۔');
   }
 
-  return [];
+  if (payload.success === false) {
+    const message = cleanString(payload.message || payload.error);
+    throw new Error(translateApiMessage(message));
+  }
+
+  const paths = [
+    ['data'],
+    ['attendance'],
+    ['records'],
+    ['record'],
+    ['rows'],
+    ['attendance', 'records'],
+    ['attendance', 'data'],
+    ['attendance', 'rows'],
+    ['data', 'records'],
+    ['data', 'attendance'],
+    ['result', 'records'],
+    ['result', 'data'],
+    ['response', 'data'],
+    ['response', 'attendance'],
+    ['attendanceList'],
+    ['staffAttendance'],
+  ];
+
+  for (const path of paths) {
+    const value = getByPath(payload, path);
+    if (Array.isArray(value)) return value;
+  }
+
+  const deepArray = findAttendanceArrayDeep(payload);
+  if (deepArray) return deepArray;
+
+  if (payload.success === true) return [];
+
+  throw new Error('حاضری کا ریکارڈ جواب میں موجود نہیں ہے۔');
 }
 
-export async function getAttendance(employeeId, filters = {}) {
+function statusToUrdu(status, item = {}) {
+  const value = cleanString(status).toLowerCase();
+  const signInStatus = cleanString(item.status_sign_in).toLowerCase();
+  const signOutStatus = cleanString(item.status_sign_out).toLowerCase();
+  const details = cleanString(item.details).toLowerCase();
+  const combined = `${value} ${signInStatus} ${signOutStatus} ${details}`;
+
+  if (combined.includes('weekend')) return 'ہفتہ وار چھٹی';
+  if (combined.includes('leave') || combined.includes('رخصت')) return 'رخصت';
+  if (combined.includes('absent') || combined.includes('غیر حاضر')) return 'غیر حاضر';
+  if (combined.includes('late') || combined.includes('تاخیر')) return 'تاخیر';
+  if (combined.includes('present') || combined.includes('حاضر')) return 'حاضر';
+  if (['p', '1'].includes(value)) return 'حاضر';
+  if (['a', '0'].includes(value)) return 'غیر حاضر';
+  return cleanString(status) || 'نامعلوم';
+}
+
+function parseLateMinutes(item) {
+  const raw = cleanString(pickValue(item, ['late_minutes', 'lateMinutes', 'late_min', 'minutes_late', 'delay_minutes', 'late']));
+  if (!raw) return 0;
+
+  if (/^\d+:\d{2}(:\d{2})?$/.test(raw)) {
+    const parts = raw.split(':').map((part) => Number(part));
+    if (parts.length === 3) return parts[0] * 60 + parts[1];
+    return parts[0] * 60 + parts[1];
+  }
+
+  const match = raw.match(/\d+/);
+  return match ? Number(match[0]) : 0;
+}
+
+function normalizeAttendanceRow(item, index) {
+  return {
+    id: cleanString(pickValue(item, ['id', 'attendance_id'])) || `${index}`,
+    date: cleanString(pickValue(item, ['date', 'attendance_date', 'att_date', 'tareekh', 'تاریخ'])),
+    day: cleanString(pickValue(item, ['day', 'weekday', 'attendance_day', 'دن'])),
+    arrival: cleanString(pickValue(item, ['sign_in', 'arrival', 'time_in', 'in_time', 'check_in', 'login_time', 'وقتِ آمد'])),
+    departure: cleanString(pickValue(item, ['sign_out', 'departure', 'time_out', 'out_time', 'check_out', 'logout_time', 'وقتِ روانگی'])),
+    status: statusToUrdu(pickValue(item, ['status', 'attendance_status', 'حیثیت', 'اسٹیٹس']), item),
+    staffName: cleanString(pickValue(item, ['staff_name', 'employee_name', 'name', 'full_name', 'teacher_name', 'نام'])),
+    branchName: cleanString(pickValue(item, ['branch_name', 'branch', 'campus', 'department', 'برانچ'])),
+    lateMinutes: parseLateMinutes(item),
+    statusSignIn: cleanString(item.status_sign_in),
+    statusSignOut: cleanString(item.status_sign_out),
+    source: item,
+  };
+}
+
+export async function getAttendance(employeeId, idCardOrFilters = {}, maybeFilters = {}) {
+  const idCard = typeof idCardOrFilters === 'string' ? idCardOrFilters : idCardOrFilters?.idCard;
+  const filters = typeof idCardOrFilters === 'string' ? maybeFilters : idCardOrFilters;
+  const previousMonth = getPreviousMonthParams();
+  const month = Number(filters.month || previousMonth.month);
+  const year = Number(filters.year || previousMonth.year);
+
+  if (!employeeId) {
+    throw new Error('ملازم نمبر موجود نہیں ہے۔');
+  }
+
+  if (!Number.isInteger(month) || month < 1 || month > 12) {
+    throw new Error('مہینہ درست نہیں ہے۔');
+  }
+
+  if (!Number.isInteger(year) || year < 2000) {
+    throw new Error('سال درست نہیں ہے۔');
+  }
+
   const params = {
     action: 'get_attendance',
+    'id-card': idCard,
     id: employeeId,
+    month,
+    year,
   };
 
-  if (filters.month) params.month = filters.month;
-  if (filters.year) params.year = filters.year;
+  try {
+    const response = await client.get('/attendance.php', { params });
+    console.log('ATTENDANCE API PARAMS:', params);
+    console.log('ATTENDANCE API RESPONSE:', response.data);
 
-  const { data } = await client.get('/attendance.php', { params });
-  const rows = unwrapAttendance(data);
+    const rows = unwrapAttendance(response.data);
+    return rows.map(normalizeAttendanceRow);
+  } catch (error) {
+    console.log('ATTENDANCE API ERROR:', error?.response?.data || error?.message || error);
 
-  return rows.map((item, index) => ({
-    id: cleanString(pickValue(item, ['id', 'attendance_id'])) || `${index}`,
-    date: cleanString(pickValue(item, ['date', 'attendance_date', 'day', 'tareekh', 'تاریخ'])),
-    arrival: cleanString(pickValue(item, ['arrival', 'time_in', 'in_time', 'check_in', 'login_time', 'وقتِ آمد'])),
-    departure: cleanString(pickValue(item, ['departure', 'time_out', 'out_time', 'check_out', 'logout_time', 'وقتِ روانگی'])),
-    status: statusToUrdu(pickValue(item, ['status', 'attendance_status', 'حیثیت', 'اسٹیٹس'])),
-  }));
+    if (error?.response?.data) {
+      const message = cleanString(error.response.data.message || error.response.data.error);
+      throw new Error(translateApiMessage(message));
+    }
+
+    if (error?.message) {
+      throw error;
+    }
+
+    throw new Error('نیٹ ورک مسئلہ ہے۔ براہ کرم دوبارہ کوشش کریں۔');
+  }
 }

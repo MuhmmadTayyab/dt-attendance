@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { loginStaff } from '../services/api';
 
 const STORAGE_KEY = 'dt-attendance-user';
+const EMPLOYEE_ID_KEY = 'dt-attendance-employee-id';
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
@@ -31,6 +32,7 @@ export function AuthProvider({ children }) {
       const profile = await loginStaff(employeeId, idCard);
       const nextUser = { employeeId, idCard, profile };
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser));
+      await AsyncStorage.setItem(EMPLOYEE_ID_KEY, employeeId);
       setUser(nextUser);
     } finally {
       setLoading(false);
@@ -38,7 +40,7 @@ export function AuthProvider({ children }) {
   };
 
   const signOut = async () => {
-    await AsyncStorage.removeItem(STORAGE_KEY);
+    await AsyncStorage.multiRemove([STORAGE_KEY, EMPLOYEE_ID_KEY]);
     setUser(null);
   };
 
