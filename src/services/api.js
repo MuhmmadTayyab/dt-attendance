@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { CURRENT_VERSION, STAFF_API_BASE_URL } from '../config/appVersion';
 
 const client = axios.create({
-  baseURL: 'https://darultaqwa.org/_app/api/staff',
+  baseURL: STAFF_API_BASE_URL,
   timeout: 15000,
 });
 
@@ -77,6 +78,7 @@ export async function loginStaff(employeeId, idCard) {
       action: 'chk_login674',
       id: employeeId,
       'id-card': idCard,
+      'app-version': CURRENT_VERSION,
     },
   });
 
@@ -248,6 +250,7 @@ export async function getAttendance(employeeId, idCardOrFilters = {}, maybeFilte
     id: employeeId,
     month,
     year,
+    'app-version': CURRENT_VERSION,
   };
 
   try {

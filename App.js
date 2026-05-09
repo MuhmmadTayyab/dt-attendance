@@ -1,11 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { I18nManager, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useFonts, NotoNaskhArabic_400Regular, NotoNaskhArabic_700Bold } from '@expo-google-fonts/noto-naskh-arabic';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import UpdateRequiredScreen from './src/components/UpdateRequiredScreen';
 import { colors } from './src/theme/colors';
+import { checkForAppUpdate } from './src/services/version';
 import LoginScreen from './src/screens/LoginScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
 import CurrentAttendanceScreen from './src/screens/CurrentAttendanceScreen';
@@ -64,6 +66,45 @@ function AppNavigator() {
   );
 }
 
+function UpdateGate({ children }) {
+  const [checking, setChecking] = useState(true);
+  const [updateInfo, setUpdateInfo] = useState(null);
+  const [error, setError] = useState('');
+
+  const checkVersion = useCallback(async () => {
+    setChecking(true);
+    setError('');
+
+    try {
+      const info = await checkForAppUpdate();
+      setUpdateInfo(info);
+    } catch {
+      setError('ورژن چیک کرنے میں مسئلہ آ رہا ہے۔');
+      setUpdateInfo(null);
+    } finally {
+      setChecking(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    checkVersion();
+  }, [checkVersion]);
+
+  if (checking && !updateInfo) {
+    return (
+      <View style={styles.loadingRoot}>
+        <Text style={styles.loadingText}>ورژن چیک ہو رہا ہے...</Text>
+      </View>
+    );
+  }
+
+  if (error || (updateInfo?.updateAvailable && updateInfo?.forceUpdate)) {
+    return <UpdateRequiredScreen updateInfo={updateInfo} error={error} checking={checking} onRetry={checkVersion} />;
+  }
+
+  return children;
+}
+
 export default function App() {
   const [fontsLoaded] = useFonts({
     NotoNaskhArabic_400Regular,
@@ -84,10 +125,12 @@ export default function App() {
   }
 
   return (
-    <AuthProvider>
-      <StatusBar style="light" backgroundColor={colors.background} />
-      <AppNavigator />
-    </AuthProvider>
+    <UpdateGate>
+      <AuthProvider>
+        <StatusBar style="light" backgroundColor={colors.background} />
+        <AppNavigator />
+      </AuthProvider>
+    </UpdateGate>
   );
 }
 
