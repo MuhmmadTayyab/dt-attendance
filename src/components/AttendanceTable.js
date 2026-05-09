@@ -11,6 +11,7 @@ const columns = [
   { key: 'status', label: 'اسٹیٹس', width: 140 },
 ];
 
+const messageWidth = columns.slice(2).reduce((total, column) => total + column.width, 0);
 const tableWidth = columns.reduce((total, column) => total + column.width, 0);
 
 function isAbsent(status) {
@@ -48,9 +49,7 @@ function isWeekend(item) {
 }
 
 function getWeekendText(item) {
-  const day = item?.day && item.day !== '-' ? item.day : '';
-  const status = item?.status && item.status !== '-' ? item.status : 'ہفتہ وار چھٹی';
-  return day ? `${status} - ${day}` : status;
+  return item?.status && item.status !== '-' ? item.status : 'ہفتہ وار چھٹی';
 }
 
 function getLeaveText(item) {
@@ -71,12 +70,24 @@ function TableCell({ children, width, header }) {
   );
 }
 
-function FullLineRow({ children, style, textStyle }) {
+function StatusMessageCell({ children, style, textStyle }) {
+  return (
+    <View style={[styles.messageCell, { width: messageWidth }, style]}>
+      <Text style={[styles.messageText, textStyle]} numberOfLines={2}>
+        {children}
+      </Text>
+    </View>
+  );
+}
+
+function StatusRow({ item, children, style, textStyle }) {
   return (
     <View style={styles.row}>
-      <View style={[styles.fullLineCell, { width: tableWidth }, style]}>
-        <Text style={[styles.fullLineText, textStyle]}>{children}</Text>
-      </View>
+      <TableCell width={columns[0].width}>{item.date}</TableCell>
+      <TableCell width={columns[1].width}>{item.day}</TableCell>
+      <StatusMessageCell style={style} textStyle={textStyle}>
+        {children}
+      </StatusMessageCell>
     </View>
   );
 }
@@ -84,25 +95,25 @@ function FullLineRow({ children, style, textStyle }) {
 function TableRow({ item }) {
   if (isWeekend(item)) {
     return (
-      <FullLineRow style={styles.weekendFullCell} textStyle={styles.weekendFullText}>
+      <StatusRow item={item} style={styles.weekendMessageCell} textStyle={styles.weekendMessageText}>
         {getWeekendText(item)}
-      </FullLineRow>
+      </StatusRow>
     );
   }
 
   if (isLeave(item.status)) {
     return (
-      <FullLineRow style={styles.leaveFullCell} textStyle={styles.leaveFullText}>
+      <StatusRow item={item} style={styles.leaveMessageCell} textStyle={styles.leaveMessageText}>
         {getLeaveText(item)}
-      </FullLineRow>
+      </StatusRow>
     );
   }
 
   if (isAbsent(item.status)) {
     return (
-      <FullLineRow style={styles.absentFullCell} textStyle={styles.absentFullText}>
+      <StatusRow item={item} style={styles.absentMessageCell} textStyle={styles.absentMessageText}>
         {getAbsentText(item)}
-      </FullLineRow>
+      </StatusRow>
     );
   }
 
@@ -176,36 +187,37 @@ const styles = StyleSheet.create({
   headerCell: {
     backgroundColor: colors.primary,
   },
-  fullLineCell: {
-    minHeight: 52,
+  messageCell: {
+    minHeight: 48,
     justifyContent: 'center',
+    borderLeftWidth: 1,
     borderBottomWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: spacing.md,
   },
-  weekendFullCell: {
+  weekendMessageCell: {
     backgroundColor: 'rgba(191, 230, 168, 0.13)',
   },
-  leaveFullCell: {
+  leaveMessageCell: {
     backgroundColor: 'rgba(255, 212, 138, 0.12)',
   },
-  absentFullCell: {
+  absentMessageCell: {
     backgroundColor: 'rgba(255, 180, 168, 0.11)',
   },
-  fullLineText: {
+  messageText: {
     fontFamily: font.bold,
     fontSize: 15,
     lineHeight: 27,
     textAlign: 'center',
     writingDirection: 'rtl',
   },
-  weekendFullText: {
+  weekendMessageText: {
     color: colors.success,
   },
-  leaveFullText: {
+  leaveMessageText: {
     color: colors.warning,
   },
-  absentFullText: {
+  absentMessageText: {
     color: colors.danger,
   },
   cellText: {

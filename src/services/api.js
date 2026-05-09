@@ -20,6 +20,19 @@ function cleanString(value) {
   return String(value ?? '').trim();
 }
 
+function formatDisplayDate(value) {
+  const raw = cleanString(value);
+  if (!raw) return '';
+
+  const normalized = raw.replace(/\//g, '-');
+  const parts = normalized.split('-');
+  if (parts.length >= 3 && parts[0].length === 4) {
+    return `${parts[2].padStart(2, '0')}-${parts[1].padStart(2, '0')}-${parts[0]}`;
+  }
+
+  return raw;
+}
+
 function translateApiMessage(message) {
   const text = cleanString(message).toLowerCase();
   if (!text) return 'حاضری کا ریکارڈ حاصل نہیں ہو سکا۔';
@@ -233,9 +246,11 @@ function parseEarlyLeaveMinutes(item) {
 }
 
 function normalizeAttendanceRow(item, index) {
+  const rawDate = cleanString(pickValue(item, ['date', 'attendance_date', 'att_date', 'tareekh', 'تاریخ']));
+
   return {
     id: cleanString(pickValue(item, ['id', 'attendance_id'])) || `${index}`,
-    date: cleanString(pickValue(item, ['date', 'attendance_date', 'att_date', 'tareekh', 'تاریخ'])),
+    date: formatDisplayDate(rawDate),
     day: cleanString(pickValue(item, ['day', 'weekday', 'attendance_day', 'دن'])),
     arrival: cleanString(pickValue(item, ['sign_in', 'arrival', 'time_in', 'in_time', 'check_in', 'login_time', 'وقتِ آمد'])),
     departure: cleanString(pickValue(item, ['sign_out', 'departure', 'time_out', 'out_time', 'check_out', 'logout_time', 'وقتِ روانگی'])),
