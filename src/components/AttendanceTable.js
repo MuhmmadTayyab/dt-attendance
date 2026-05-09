@@ -43,8 +43,7 @@ function isWeekend(item) {
     value.includes('weekly off') ||
     value.includes('weekly holiday') ||
     value.includes('ہفتہ وار چھٹی') ||
-    value.includes('ÛÙØªÛ ÙˆØ§Ø± Ú†Ú¾Ù¹ÛŒ') ||
-    value.includes('Ú†Ú¾Ù¹ÛŒ')
+    value.includes('چھٹی')
   );
 }
 
@@ -54,41 +53,64 @@ function getWeekendText(item) {
   return day ? `${status} - ${day}` : status;
 }
 
-function getCellValue(item, key) {
-  if (key === 'status' && isLeave(item.status) && item.leaveReason) {
-    return `${item.status}: ${item.leaveReason}`;
-  }
-  return item[key];
+function getLeaveText(item) {
+  return item?.leaveReason ? `رخصت بوجہ ${item.leaveReason}` : item?.status || 'رخصت';
 }
 
-function TableCell({ children, width, header, danger }) {
+function getAbsentText(item) {
+  return item?.status || 'غیر حاضر';
+}
+
+function TableCell({ children, width, header }) {
   return (
-    <View style={[styles.cell, { width }, header && styles.headerCell, danger && styles.dangerCell]}>
-      <Text style={[styles.cellText, header && styles.headerText, danger && styles.dangerText]} numberOfLines={2}>
+    <View style={[styles.cell, { width }, header && styles.headerCell]}>
+      <Text style={[styles.cellText, header && styles.headerText]} numberOfLines={2}>
         {children || '-'}
       </Text>
     </View>
   );
 }
 
-function TableRow({ item }) {
-  const danger = isAbsent(item.status);
+function FullLineRow({ children, style, textStyle }) {
+  return (
+    <View style={styles.row}>
+      <View style={[styles.fullLineCell, { width: tableWidth }, style]}>
+        <Text style={[styles.fullLineText, textStyle]}>{children}</Text>
+      </View>
+    </View>
+  );
+}
 
+function TableRow({ item }) {
   if (isWeekend(item)) {
     return (
-      <View style={styles.row}>
-        <View style={[styles.weekendFullCell, { width: tableWidth }]}>
-          <Text style={styles.weekendFullText}>{getWeekendText(item)}</Text>
-        </View>
-      </View>
+      <FullLineRow style={styles.weekendFullCell} textStyle={styles.weekendFullText}>
+        {getWeekendText(item)}
+      </FullLineRow>
+    );
+  }
+
+  if (isLeave(item.status)) {
+    return (
+      <FullLineRow style={styles.leaveFullCell} textStyle={styles.leaveFullText}>
+        {getLeaveText(item)}
+      </FullLineRow>
+    );
+  }
+
+  if (isAbsent(item.status)) {
+    return (
+      <FullLineRow style={styles.absentFullCell} textStyle={styles.absentFullText}>
+        {getAbsentText(item)}
+      </FullLineRow>
     );
   }
 
   return (
     <View style={styles.row}>
       {columns.map((column) => (
-        <TableCell key={column.key} width={column.width} danger={danger}>
-          {getCellValue(item, column.key)}
+        <TableCell key={column.key} width={column.width}>
+          {item[column.key]}
         </TableCell>
       ))}
     </View>
@@ -154,24 +176,37 @@ const styles = StyleSheet.create({
   headerCell: {
     backgroundColor: colors.primary,
   },
-  dangerCell: {
-    backgroundColor: 'rgba(255, 180, 168, 0.09)',
-  },
-  weekendFullCell: {
+  fullLineCell: {
     minHeight: 52,
     justifyContent: 'center',
     borderBottomWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: spacing.md,
+  },
+  weekendFullCell: {
     backgroundColor: 'rgba(191, 230, 168, 0.13)',
   },
-  weekendFullText: {
-    color: colors.success,
+  leaveFullCell: {
+    backgroundColor: 'rgba(255, 212, 138, 0.12)',
+  },
+  absentFullCell: {
+    backgroundColor: 'rgba(255, 180, 168, 0.11)',
+  },
+  fullLineText: {
     fontFamily: font.bold,
     fontSize: 15,
     lineHeight: 27,
     textAlign: 'center',
     writingDirection: 'rtl',
+  },
+  weekendFullText: {
+    color: colors.success,
+  },
+  leaveFullText: {
+    color: colors.warning,
+  },
+  absentFullText: {
+    color: colors.danger,
   },
   cellText: {
     color: colors.white,
@@ -185,10 +220,6 @@ const styles = StyleSheet.create({
     color: colors.cream,
     fontFamily: font.bold,
     fontSize: 14,
-  },
-  dangerText: {
-    color: colors.danger,
-    fontFamily: font.bold,
   },
   empty: {
     color: colors.creamMuted,
