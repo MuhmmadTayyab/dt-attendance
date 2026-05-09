@@ -208,6 +208,30 @@ function parseLateMinutes(item) {
   return match ? Number(match[0]) : 0;
 }
 
+function parseEarlyLeaveMinutes(item) {
+  const raw = cleanString(
+    pickValue(item, [
+      'early_leave_minutes',
+      'earlyLeaveMinutes',
+      'early_minutes',
+      'early_out_minutes',
+      'short_minutes',
+      'left_early_minutes',
+      'early_leave',
+    ]),
+  );
+  if (!raw) return 0;
+
+  if (/^\d+:\d{2}(:\d{2})?$/.test(raw)) {
+    const parts = raw.split(':').map((part) => Number(part));
+    if (parts.length === 3) return parts[0] * 60 + parts[1];
+    return parts[0] * 60 + parts[1];
+  }
+
+  const match = raw.match(/\d+/);
+  return match ? Number(match[0]) : 0;
+}
+
 function normalizeAttendanceRow(item, index) {
   return {
     id: cleanString(pickValue(item, ['id', 'attendance_id'])) || `${index}`,
@@ -219,6 +243,19 @@ function normalizeAttendanceRow(item, index) {
     staffName: cleanString(pickValue(item, ['staff_name', 'employee_name', 'name', 'full_name', 'teacher_name', 'نام'])),
     branchName: cleanString(pickValue(item, ['branch_name', 'branch', 'campus', 'department', 'برانچ'])),
     lateMinutes: parseLateMinutes(item),
+    earlyLeaveMinutes: parseEarlyLeaveMinutes(item),
+    leaveReason: cleanString(
+      pickValue(item, [
+        'leave_reason',
+        'leaveReason',
+        'reason',
+        'leave_details',
+        'leaveDetails',
+        'details',
+        'remarks',
+        'note',
+      ]),
+    ),
     statusSignIn: cleanString(item.status_sign_in),
     statusSignOut: cleanString(item.status_sign_out),
     source: item,

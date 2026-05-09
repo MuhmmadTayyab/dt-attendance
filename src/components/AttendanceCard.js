@@ -16,13 +16,40 @@ function Field({ icon: Icon, label, value }) {
   );
 }
 
+function isWeekend(item) {
+  const value = `${item?.day || ''} ${item?.status || ''}`.toLowerCase();
+  return (
+    value.includes('weekend') ||
+    value.includes('saturday') ||
+    value.includes('sunday') ||
+    value.includes('ہفتہ') ||
+    value.includes('اتوار') ||
+    value.includes('چھٹی')
+  );
+}
+
+function isLeave(item) {
+  const value = String(item?.status || '').toLowerCase();
+  return value.includes('leave') || value.includes('رخصت');
+}
+
 export default function AttendanceCard({ item }) {
+  if (isWeekend(item)) {
+    return (
+      <View style={[styles.card, styles.weekendCard]}>
+        <Field icon={CalendarDays} label="تاریخ" value={item.date} />
+        <Text style={styles.weekendText}>{item.day ? `${item.status} - ${item.day}` : item.status}</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.card}>
       <Field icon={CalendarDays} label="تاریخ" value={item.date} />
-      <Field icon={LogIn} label="وقتِ آمد" value={item.arrival} />
-      <Field icon={LogOut} label="وقتِ روانگی" value={item.departure} />
+      <Field icon={LogIn} label="وقت آمد" value={item.arrival} />
+      <Field icon={LogOut} label="وقت روانگی" value={item.departure} />
       <Field icon={ShieldCheck} label="اسٹیٹس" value={item.status} />
+      {isLeave(item) && item.leaveReason ? <Field icon={Clock3} label="رخصت کی وجہ" value={item.leaveReason} /> : null}
     </View>
   );
 }
@@ -35,6 +62,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     padding: spacing.md,
     gap: spacing.sm,
+  },
+  weekendCard: {
+    backgroundColor: 'rgba(191, 230, 168, 0.13)',
+    borderColor: colors.success,
+  },
+  weekendText: {
+    color: colors.success,
+    fontFamily: font.bold,
+    fontSize: 17,
+    lineHeight: 31,
+    textAlign: 'center',
+    writingDirection: 'rtl',
   },
   field: {
     flexDirection: 'row-reverse',

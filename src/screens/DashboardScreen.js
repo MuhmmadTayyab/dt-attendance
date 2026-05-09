@@ -51,6 +51,32 @@ function getPreviousMonth() {
   };
 }
 
+function getDaysInMonth(month, year) {
+  return new Date(year, month, 0).getDate();
+}
+
+function countWeekendDays(month, year) {
+  let total = 0;
+  const days = getDaysInMonth(month, year);
+
+  for (let day = 1; day <= days; day += 1) {
+    const weekDay = new Date(year, month - 1, day).getDay();
+    if (weekDay === 0 || weekDay === 6) total += 1;
+  }
+
+  return total;
+}
+
+function formatMinutes(minutes) {
+  const total = Number(minutes || 0);
+  if (total <= 0) return '0 منٹ';
+  const hours = Math.floor(total / 60);
+  const remaining = total % 60;
+  if (!hours) return `${remaining} منٹ`;
+  if (!remaining) return `${hours} گھنٹے`;
+  return `${hours} گھنٹے ${remaining} منٹ`;
+}
+
 function parseDateValue(value) {
   if (!value) return null;
   const normalized = String(value).replace(/\//g, '-');
@@ -77,9 +103,15 @@ function getUrduDay(record) {
 }
 
 function isWeekend(record) {
-  const day = getUrduDay(record);
-  const status = String(record.status || '').toLowerCase();
-  return day === 'ہفتہ' || day === 'اتوار' || status.includes('weekend') || status.includes('چھٹی');
+  const text = `${getUrduDay(record)} ${record.status || ''}`.toLowerCase();
+  return (
+    text.includes('ہفتہ') ||
+    text.includes('اتوار') ||
+    text.includes('saturday') ||
+    text.includes('sunday') ||
+    text.includes('weekend') ||
+    text.includes('چھٹی')
+  );
 }
 
 function isAbsent(record) {
@@ -116,22 +148,41 @@ function normalizeRecords(records) {
     });
 }
 
-function calculateSummary(records) {
-  const lateDays = records.filter(isLate).length;
-  const lateMinutes = records.reduce((total, record) => total + Number(record.lateMinutes || 0), 0);
-  const weekends = records.filter(isWeekend).length;
+function calculateSummary(records, monthInfo) {
+  const totalDays = getDaysInMonth(monthInfo.month, monthInfo.year);
+  const weekends = countWeekendDays(monthInfo.month, monthInfo.year);
+  const attendanceRecords = records.filter((record) => !isAbsent(record) && !isLeave(record) && !isWeekend(record));
+  const lateRecords = attendanceRecords.filter(isLate);
+  const earlyLeaveRecords = attendanceRecords.filter((record) => Number(record.earlyLeaveMinutes || 0) > 0);
+  const lateDays = lateRecords.length;
+  const lateMinutes = lateRecords.reduce((total, record) => total + Number(record.lateMinutes || 0), 0);
+  const earlyLeaveDays = earlyLeaveRecords.length;
+  const earlyLeaveMinutes = earlyLeaveRecords.reduce((total, record) => total + Number(record.earlyLeaveMinutes || 0), 0);
   const absents = records.filter(isAbsent).length;
-  const leaves = records.filter(isLeave).length;
-  const workingDays = Math.max(records.length - weekends, 0);
-  const presentDays = records.filter((record) => isPresent(record) && !isAbsent(record) && !isLeave(record)).length;
+  const leaveRecords = records.filter(isLeave);
+  const leaves = leaveRecords.length;
+  const workingDays = Math.max(totalDays - weekends, 0);
+  const presentDays = attendanceRecords.filter(isPresent).length;
+  const onTimeDays = Math.max(presentDays - lateDays, 0);
 
   return {
-    lateText: `${lateDays} دن / ${lateMinutes} منٹ`,
+    totalDays,
     weekends,
-    absents,
-    leaves,
     workingDays,
     presentDays,
+    absents,
+    leaves,
+    onTimeDays,
+    lateDays,
+    lateTotalText: formatMinutes(lateMinutes),
+    earlyLeaveDays,
+    earlyLeaveTotalText: formatMinutes(earlyLeaveMinutes),
+    leaveReasons: leaveRecords
+      .filter((record) => record.leaveReason)
+      .map((record) => ({
+        date: record.date,
+        reason: record.leaveReason,
+      })),
   };
 }
 
@@ -204,10 +255,7 @@ function RulesPage() {
     <View style={styles.rulesCard}>
       <Text style={styles.rulesTitle}>اصول و ضوابط</Text>
       <Text style={styles.rulesText}>
-        یہاں حاضری کے اصول و ضوابط شامل کیے جائیں گے۔ آپ بعد میں اس حصے میں اردو پیراگراف، تاخیر کے قواعد، رخصت کی شرائط، اور غیر حاضری کی وضاحت آسانی سے شامل کر سکتے ہیں۔
-      </Text>
-      <Text style={styles.rulesText}>
-        متن کو پڑھنے میں آسان رکھنے کے لیے یہ حصہ اسکرول کے ساتھ بنایا گیا ہے۔
+        یہاں حاضری کے اصول و ضوابط شامل کیے جائیں گے۔ آپ بعد میں اس حصے میں تاخیر، رخصت، اور غیر حاضری کی وضاحت شامل کر سکتے ہیں۔
       </Text>
     </View>
   );
@@ -245,7 +293,7 @@ export default function DashboardScreen({ navigation }) {
     loadAttendance();
   }, [loadAttendance]);
 
-  const summary = useMemo(() => calculateSummary(records), [records]);
+  const summary = useMemo(() => calculateSummary(records, previousMonth), [previousMonth, records]);
 
   return (
     <Screen scroll={false}>

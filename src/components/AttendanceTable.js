@@ -8,21 +8,49 @@ const columns = [
   { key: 'day', label: 'دن', width: 90 },
   { key: 'arrival', label: 'وقت آمد', width: 105 },
   { key: 'departure', label: 'وقت روانگی', width: 110 },
-  { key: 'status', label: 'اسٹیٹس', width: 110 },
+  { key: 'status', label: 'اسٹیٹس', width: 140 },
 ];
 
+const tableWidth = columns.reduce((total, column) => total + column.width, 0);
+
 function isAbsent(status) {
-  return String(status || '').includes('غیر حاضر');
+  const value = String(status || '').toLowerCase();
+  return value.includes('غیر حاضر') || value.includes('absent');
 }
 
-function isWeekend(day) {
-  const value = String(day || '').toLowerCase();
-  return value.includes('saturday') || value.includes('sunday') || value.includes('ہفتہ') || value.includes('اتوار');
+function isLeave(status) {
+  const value = String(status || '').toLowerCase();
+  return value.includes('رخصت') || value.includes('leave');
 }
 
-function TableCell({ children, width, header, danger, weekend }) {
+function isWeekend(item) {
+  const value = `${item?.day || ''} ${item?.status || ''}`.toLowerCase();
   return (
-    <View style={[styles.cell, { width }, header && styles.headerCell, danger && styles.dangerCell, weekend && styles.weekendCell]}>
+    value.includes('saturday') ||
+    value.includes('sunday') ||
+    value.includes('weekend') ||
+    value.includes('ہفتہ') ||
+    value.includes('اتوار') ||
+    value.includes('چھٹی')
+  );
+}
+
+function getWeekendText(item) {
+  const day = item?.day && item.day !== '-' ? item.day : '';
+  const status = item?.status && item.status !== '-' ? item.status : 'ہفتہ وار چھٹی';
+  return day ? `${status} - ${day}` : status;
+}
+
+function getCellValue(item, key) {
+  if (key === 'status' && isLeave(item.status) && item.leaveReason) {
+    return `${item.status}: ${item.leaveReason}`;
+  }
+  return item[key];
+}
+
+function TableCell({ children, width, header, danger }) {
+  return (
+    <View style={[styles.cell, { width }, header && styles.headerCell, danger && styles.dangerCell]}>
       <Text style={[styles.cellText, header && styles.headerText, danger && styles.dangerText]} numberOfLines={2}>
         {children || '-'}
       </Text>
@@ -32,13 +60,22 @@ function TableCell({ children, width, header, danger, weekend }) {
 
 function TableRow({ item }) {
   const danger = isAbsent(item.status);
-  const weekend = isWeekend(item.day);
+
+  if (isWeekend(item)) {
+    return (
+      <View style={styles.row}>
+        <View style={[styles.weekendFullCell, { width: tableWidth }]}>
+          <Text style={styles.weekendFullText}>{getWeekendText(item)}</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.row}>
       {columns.map((column) => (
-        <TableCell key={column.key} width={column.width} danger={danger} weekend={weekend}>
-          {item[column.key]}
+        <TableCell key={column.key} width={column.width} danger={danger}>
+          {getCellValue(item, column.key)}
         </TableCell>
       ))}
     </View>
@@ -83,7 +120,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   table: {
-    minWidth: 525,
+    minWidth: tableWidth,
     flex: 1,
   },
   row: {
@@ -107,8 +144,21 @@ const styles = StyleSheet.create({
   dangerCell: {
     backgroundColor: 'rgba(255, 180, 168, 0.09)',
   },
-  weekendCell: {
-    backgroundColor: 'rgba(255, 212, 138, 0.08)',
+  weekendFullCell: {
+    minHeight: 52,
+    justifyContent: 'center',
+    borderBottomWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    backgroundColor: 'rgba(191, 230, 168, 0.13)',
+  },
+  weekendFullText: {
+    color: colors.success,
+    fontFamily: font.bold,
+    fontSize: 15,
+    lineHeight: 27,
+    textAlign: 'center',
+    writingDirection: 'rtl',
   },
   cellText: {
     color: colors.white,

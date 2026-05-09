@@ -4,15 +4,22 @@ import { colors } from '../theme/colors';
 import { font, radius, spacing } from '../theme/layout';
 
 const summaryItems = [
-  { key: 'lateText', label: 'کل تاخیر' },
-  { key: 'weekends', label: 'کل ہفتہ وار چھٹیاں' },
-  { key: 'absents', label: 'کل غیر حاضریاں' },
-  { key: 'leaves', label: 'کل رخصتیں' },
-  { key: 'workingDays', label: 'کل ورکنگ دن' },
-  { key: 'presentDays', label: 'کل حاضر دن' },
+  { key: 'totalDays', label: 'اس ماہ کے کل دن' },
+  { key: 'weekends', label: 'ہفتہ وار چھٹیاں' },
+  { key: 'workingDays', label: 'ورکنگ ڈیز' },
+  { key: 'presentDays', label: 'حاضر دن' },
+  { key: 'absents', label: 'غیر حاضر دن' },
+  { key: 'leaves', label: 'رخصت کے دن' },
+  { key: 'onTimeDays', label: 'بروقت آنے کے دن' },
+  { key: 'lateDays', label: 'تاخیر سے آنے کے دن' },
+  { key: 'lateTotalText', label: 'کل تاخیر' },
+  { key: 'earlyLeaveDays', label: 'جلدی جانے کے دن' },
+  { key: 'earlyLeaveTotalText', label: 'کل جلدی روانگی' },
 ];
 
 export default function AttendanceSummary({ summary, fullPage = false }) {
+  const leaveReasons = summary.leaveReasons || [];
+
   return (
     <View style={[styles.card, fullPage && styles.fullPage]}>
       <Text style={styles.title}>ماہانہ خلاصہ</Text>
@@ -24,6 +31,18 @@ export default function AttendanceSummary({ summary, fullPage = false }) {
           </View>
         ))}
       </View>
+
+      {leaveReasons.length ? (
+        <View style={styles.reasonBox}>
+          <Text style={styles.reasonTitle}>رخصت کی تفصیل</Text>
+          {leaveReasons.map((item, index) => (
+            <Text key={`${item.date || 'leave'}-${index}`} style={styles.reasonText}>
+              {item.date ? `${item.date}: ` : ''}
+              {item.reason}
+            </Text>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -77,6 +96,30 @@ const styles = StyleSheet.create({
     fontFamily: font.regular,
     fontSize: 13,
     lineHeight: 23,
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
+  reasonBox: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.primaryDark,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  reasonTitle: {
+    color: colors.cream,
+    fontFamily: font.bold,
+    fontSize: 16,
+    lineHeight: 28,
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
+  reasonText: {
+    color: colors.creamMuted,
+    fontFamily: font.regular,
+    fontSize: 14,
+    lineHeight: 25,
     textAlign: 'right',
     writingDirection: 'rtl',
   },
