@@ -55,18 +55,6 @@ function getDaysInMonth(month, year) {
   return new Date(year, month, 0).getDate();
 }
 
-function countWeekendDays(month, year) {
-  let total = 0;
-  const days = getDaysInMonth(month, year);
-
-  for (let day = 1; day <= days; day += 1) {
-    const weekDay = new Date(year, month - 1, day).getDay();
-    if (weekDay === 0 || weekDay === 6) total += 1;
-  }
-
-  return total;
-}
-
 function formatMinutes(minutes) {
   const total = Number(minutes || 0);
   if (total <= 0) return '0 منٹ';
@@ -103,14 +91,27 @@ function getUrduDay(record) {
 }
 
 function isWeekend(record) {
-  const text = `${getUrduDay(record)} ${record.status || ''}`.toLowerCase();
+  const text = [
+    record.status,
+    record.statusSignIn,
+    record.statusSignOut,
+    record.source?.status,
+    record.source?.attendance_status,
+    record.source?.details,
+    record.source?.type,
+    record.source?.holiday_type,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
   return (
-    text.includes('ہفتہ') ||
-    text.includes('اتوار') ||
-    text.includes('saturday') ||
-    text.includes('sunday') ||
     text.includes('weekend') ||
-    text.includes('چھٹی')
+    text.includes('weekly off') ||
+    text.includes('weekly holiday') ||
+    text.includes('ہفتہ وار چھٹی') ||
+    text.includes('ÛÙØªÛ ÙˆØ§Ø± Ú†Ú¾Ù¹ÛŒ') ||
+    text.includes('Ú†Ú¾Ù¹ÛŒ')
   );
 }
 
@@ -150,7 +151,7 @@ function normalizeRecords(records) {
 
 function calculateSummary(records, monthInfo) {
   const totalDays = getDaysInMonth(monthInfo.month, monthInfo.year);
-  const weekends = countWeekendDays(monthInfo.month, monthInfo.year);
+  const weekends = records.filter(isWeekend).length;
   const attendanceRecords = records.filter((record) => !isAbsent(record) && !isLeave(record) && !isWeekend(record));
   const lateRecords = attendanceRecords.filter(isLate);
   const earlyLeaveRecords = attendanceRecords.filter((record) => Number(record.earlyLeaveMinutes || 0) > 0);

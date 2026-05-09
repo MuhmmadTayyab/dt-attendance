@@ -24,14 +24,27 @@ function isLeave(status) {
 }
 
 function isWeekend(item) {
-  const value = `${item?.day || ''} ${item?.status || ''}`.toLowerCase();
+  const value = [
+    item?.status,
+    item?.statusSignIn,
+    item?.statusSignOut,
+    item?.source?.status,
+    item?.source?.attendance_status,
+    item?.source?.details,
+    item?.source?.type,
+    item?.source?.holiday_type,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
   return (
-    value.includes('saturday') ||
-    value.includes('sunday') ||
     value.includes('weekend') ||
-    value.includes('ہفتہ') ||
-    value.includes('اتوار') ||
-    value.includes('چھٹی')
+    value.includes('weekly off') ||
+    value.includes('weekly holiday') ||
+    value.includes('ہفتہ وار چھٹی') ||
+    value.includes('ÛÙØªÛ ÙˆØ§Ø± Ú†Ú¾Ù¹ÛŒ') ||
+    value.includes('Ú†Ú¾Ù¹ÛŒ')
   );
 }
 
