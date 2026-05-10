@@ -41,6 +41,89 @@ const urduDays = {
   saturday: 'ہفتہ',
 };
 
+const ruleFilters = [
+  { key: 'all', label: 'تمام' },
+  { key: 'attendance', label: 'حاضری' },
+  { key: 'late', label: 'تاخیر' },
+  { key: 'leave', label: 'رخصت' },
+  { key: 'deduction', label: 'کٹوتی' },
+];
+
+const attendanceRules = [
+  {
+    id: '1',
+    category: 'attendance',
+    title: 'حاضری پہلے لگائیں',
+    text: 'حاضری بر وقت لگائیں۔ آتے ہی پہلے حاضری لگائیں، پھر سبق کے لئے تشریف لے جائیں۔ حاضری نہ لگانے کی صورت میں ناظم دفتر سرخ قلم سے نشان لگانے کا مجاز ہے۔ سرخ نشان پر غیر حاضری تصور ہوگی یا کم سے کم ایک گھنٹہ منفی کیا جائے گا۔',
+  },
+  {
+    id: '2',
+    category: 'late',
+    title: 'ابتدائی 15 منٹ کی رعایت',
+    text: 'ابتداء سے 15 منٹ تک تاخیر کی کٹوتی نہیں ہوگی۔ اس کے بعد کی تاخیر کی کٹوتی کی جائے گی۔',
+  },
+  {
+    id: '4',
+    category: 'leave',
+    title: 'ماہانہ رخصت کا طریقہ',
+    text: 'ہر ماہ بامر مجبوری اپنی شاخ کے متعلقہ ناظم صاحب کو اطلاع کے ساتھ 2 رخصت کی اجازت ہوگی۔ دو سے زائد رخصت کی صورت میں چھٹی سے کم از کم 3 ایام قبل درخواست تحریری طور پر متبادل کے نظم اور اس کے دستخط کے ساتھ اپنی شاخ کے متعلقہ ناظم الامور اور ناظم تعلیمات صاحب سے منظور کروا کر بذریعہ ناظم صاحب مرکزی دفتر انتظامیہ میں ارسال کرکے منظور کروانا لازم ہے۔ بصورت دیگر غیر حاضری شمار کی جائے گی۔',
+  },
+  {
+    id: '5',
+    category: 'leave',
+    title: 'درخواست کی soft copy',
+    text: 'سہولت کے لئے hard copy یعنی کاغذ کے بجائے soft copy یعنی تصویر بھی قابل قبول ہوگی۔ تصویر کسی بھی فرد کے نجی نمبر پر ارسال کرنے کے بجائے صرف مرکزی دفتر انتظامیہ کے نمبر پر ہی ارسال فرمائیں۔',
+  },
+  {
+    id: '6',
+    category: 'leave',
+    title: 'امتحانی ایام اور ذمہ داریاں',
+    text: 'امتحانی ایام میں رخصت کی صورت میں درخواست پر امتحانی کمیٹی کے ذمہ داران حضرات کی رائے مع دستخط ارسال کرنا ضروری ہے۔ ناظمین حضرات و اساتذہ کرام ماہ شعبان و رمضان میں ادارے کی طرف سے دی گئی ذمہ داریاں ادا کرنے کے پابند ہوں گے۔',
+  },
+  {
+    id: '7',
+    category: 'leave',
+    title: 'منظوری کے بغیر چھٹی',
+    text: 'بغیر اطلاع کے چھٹی، منظوری سے قبل چھٹی، یا چھٹی کے بعد جمع کروائی گئی درخواست غیر حاضری شمار کی جائے گی اور اس میں کسی قسم کی تبدیلی نہیں ہوگی۔',
+  },
+  {
+    id: '8',
+    category: 'leave',
+    title: 'سالانہ چھٹیوں کا استحقاق',
+    text: 'عملے کے افراد کو سال میں 24 چھٹیوں کا استحقاق حاصل ہوگا۔ شعبان اور رمضان میں حاضر رہنے والے شعبہ حفظ اور دفتری عملے کو سالانہ 36 چھٹیوں کا استحقاق حاصل ہے۔ کل وقتی اساتذہ جو مدرسے میں رہائش پذیر ہیں اور جمعہ المبارک کو نگرانی کے لئے متعین ہیں، انہیں بشمول جمعہ المبارک سالانہ 27 چھٹیوں کا استحقاق حاصل ہوگا۔',
+  },
+  {
+    id: '9',
+    category: 'leave',
+    title: 'بیماری کی رخصت',
+    text: 'بیماری کی وجہ سے زیادہ رخصت ہونے کی درخواست دینا لازم ہے۔ درخواست کے ساتھ مستند ڈاکٹر کی تحریر اور ٹیسٹ رپورٹ لف کرنا لازمی ہے۔',
+  },
+  {
+    id: '10',
+    category: 'deduction',
+    title: 'غیر حاضری کی کٹوتی',
+    text: 'غیر حاضری یعنی بغیر اطلاع کے چھٹی کی مکمل کٹوتی ہوگی۔',
+  },
+  {
+    id: '11',
+    category: 'attendance',
+    title: 'نئی تقرری والے احباب',
+    text: 'نئے تقرری والے احباب جس تاریخ کو مکمل فارم جمع کروائیں گے، اسی تاریخ سے ان کی تنخواہ جاری کی جائے گی۔ پہلے تین ماہ کسی قسم کی رخصت اور تاخیر قابل قبول نہیں ہوگی، چھٹی کو غیر حاضری شمار کیا جائے گا۔',
+  },
+  {
+    id: '12',
+    category: 'attendance',
+    title: 'امتحانی نگرانی یا ضروری کام',
+    text: 'اگر کسی ساتھی نے امتحانی نگرانی یا کسی اور ضروری کام سے جانا ہو تو پہلے سے تحریری طور پر متعلقہ ذمہ داران حضرات کے ذریعے مرکزی دفتر انتظامیہ کو مطلع کرنا لازم ہے۔',
+  },
+  {
+    id: '13',
+    category: 'leave',
+    title: 'حتمی فیصلہ',
+    text: 'رخصت اور حاضری سے متعلق حضرات اہل شوری کا فیصلہ حتمی تصور کیا جائے گا۔',
+  },
+];
+
 function getPreviousMonth() {
   const { month, year } = getPreviousMonthParams();
   const previous = new Date(year, month - 1, 1);
@@ -252,12 +335,55 @@ function StaffInfoCard({ user, records, monthLabel }) {
 }
 
 function RulesPage() {
+  const [activeFilter, setActiveFilter] = useState('all');
+  const visibleRules = attendanceRules.filter(
+    (rule) => activeFilter === 'all' || rule.category === activeFilter
+  );
+
   return (
-    <View style={styles.rulesCard}>
-      <Text style={styles.rulesTitle}>اصول و ضوابط</Text>
-      <Text style={styles.rulesText}>
-        یہاں حاضری کے اصول و ضوابط شامل کیے جائیں گے۔ آپ بعد میں اس حصے میں تاخیر، رخصت، اور غیر حاضری کی وضاحت شامل کر سکتے ہیں۔
-      </Text>
+    <View style={styles.rulesContainer}>
+      <View style={styles.rulesHeader}>
+        <Text style={styles.rulesTitle}>اصول و ضوابط</Text>
+        <Text style={styles.rulesSubtitle}>
+          نظم و ضبط کی بہتری کے لئے تمام عملہ و اساتذہ ان ہدایات پر عمل کرنے کے پابند ہیں۔
+        </Text>
+      </View>
+
+      <View style={styles.ruleFilterBar}>
+        {ruleFilters.map((filter) => {
+          const selected = activeFilter === filter.key;
+          return (
+            <Pressable
+              key={filter.key}
+              accessibilityRole="button"
+              onPress={() => setActiveFilter(filter.key)}
+              style={[styles.ruleFilter, selected && styles.activeRuleFilter]}
+            >
+              <Text style={[styles.ruleFilterText, selected && styles.activeRuleFilterText]}>
+                {filter.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {visibleRules.map((rule) => (
+        <View key={rule.id} style={styles.ruleItem}>
+          <View style={styles.ruleNumberBox}>
+            <Text style={styles.ruleNumber}>{rule.id}</Text>
+          </View>
+          <View style={styles.ruleBody}>
+            <Text style={styles.ruleItemTitle}>{rule.title}</Text>
+            <Text style={styles.ruleText}>{rule.text}</Text>
+          </View>
+        </View>
+      ))}
+
+      <View style={styles.rulesNote}>
+        <Text style={styles.rulesNoteText}>
+          ایک ضروری گزارش ہے کہ درخواست صرف وہی قابل قبول ہوگی جو مندرجہ بالا طریقہ کار کے مطابق مرکزی دفتر انتظامیہ سے منظور ہوگی۔ نظم و ضبط کی بہتری کے لئے مذکورہ طریقہ کار کا اہتمام فرمائیں۔ جزاکم اللہ خیرا
+        </Text>
+      </View>
     </View>
   );
 }
@@ -424,13 +550,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     writingDirection: 'rtl',
   },
-  rulesCard: {
+  rulesContainer: {
+    gap: spacing.md,
+  },
+  rulesHeader: {
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     padding: spacing.lg,
-    gap: spacing.md,
+    gap: spacing.xs,
   },
   rulesTitle: {
     color: colors.cream,
@@ -440,11 +569,103 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     writingDirection: 'rtl',
   },
-  rulesText: {
+  rulesSubtitle: {
     color: colors.creamMuted,
     fontFamily: font.regular,
+    fontSize: 15,
+    lineHeight: 30,
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
+  ruleFilterBar: {
+    flexDirection: 'row-reverse',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  ruleFilter: {
+    minHeight: 42,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeRuleFilter: {
+    backgroundColor: colors.cream,
+    borderColor: colors.cream,
+  },
+  ruleFilterText: {
+    color: colors.creamMuted,
+    fontFamily: font.bold,
+    fontSize: 14,
+    lineHeight: 24,
+    textAlign: 'center',
+    writingDirection: 'rtl',
+  },
+  activeRuleFilterText: {
+    color: colors.primaryDark,
+  },
+  ruleItem: {
+    flexDirection: 'row-reverse',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    padding: spacing.md,
+  },
+  ruleNumberBox: {
+    width: 38,
+    minHeight: 38,
+    borderRadius: radius.sm,
+    backgroundColor: colors.primary,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ruleNumber: {
+    color: colors.cream,
+    fontFamily: font.bold,
     fontSize: 16,
-    lineHeight: 32,
+    lineHeight: 24,
+    textAlign: 'center',
+  },
+  ruleBody: {
+    flex: 1,
+    gap: 4,
+  },
+  ruleItemTitle: {
+    color: colors.white,
+    fontFamily: font.bold,
+    fontSize: 17,
+    lineHeight: 31,
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
+  ruleText: {
+    color: colors.creamMuted,
+    fontFamily: font.regular,
+    fontSize: 15,
+    lineHeight: 31,
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
+  rulesNote: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.creamMuted,
+    backgroundColor: colors.surfaceSoft,
+    padding: spacing.md,
+  },
+  rulesNoteText: {
+    color: colors.white,
+    fontFamily: font.bold,
+    fontSize: 15,
+    lineHeight: 31,
     textAlign: 'right',
     writingDirection: 'rtl',
   },
